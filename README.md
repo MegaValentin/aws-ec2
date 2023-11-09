@@ -1,6 +1,6 @@
 # aws-ecs
 
-# README: Crear Instancia EC2 con Auto-Scaling y Reglas de Seguridad
+# Crear Instancia EC2 con Auto-Scaling y Reglas de Seguridad
 
 Este conjunto de comandos de AWS CLI te permite crear una instancia EC2 con auto-escalado y definir reglas de seguridad para tu aplicación.
 
