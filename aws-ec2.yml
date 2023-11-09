@@ -1,0 +1,65 @@
+aws ec2 run-instances \
+    --image-id ami-xxxxxxxxxxxxx \  
+    --instance-type t2.micro \       
+    --key-name my-key-pair \         
+    --security-groups MySecurityGroup \ 
+    --user-data '#!/bin/bash
+                 # Instalar Node.js
+                 curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+                 sudo apt-get install -y nodejs'
+
+
+aws autoscaling create-launch-configuration \
+    --launch-configuration-name MyLaunchConfig \
+    --image-id ami-xxxxxxxxxxxxx \
+    --instance-type t2.micro \
+    --key-name my-key-pair \
+    --security-groups MySecurityGroup \
+    --user-data '#!/bin/bash
+                 curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+                 sudo apt-get install -y nodejs'
+
+aws autoscaling create-auto-scaling-group \
+    --auto-scaling-group-name MyAutoScalingGroup \
+    --launch-configuration-name MyLaunchConfig \
+    --min-size 1 \
+    --max-size 3 \
+    --desired-capacity 2 \
+    --availability-zones us-east-1a us-east-1b \ # Ajusta las zonas 
+    --vpc-zone-identifier subnet-xxxxxxxxxxxxx \ 
+    --tags Key=Name,Value=MyAutoScalingGroup,PropagateAtLaunch=true
+
+
+aws autoscaling put-scaling-policy \
+    --auto-scaling-group-name MyAutoScalingGroup \
+    --policy-name ScaleUpPolicy \
+    --scaling-adjustment 1 \
+    --adjustment-type ChangeInCapacity \
+    --cooldown 300 \ # Tiempo de espera entre escalados (en segundos)
+    --metric-name CPUUtilization \ 
+    --namespace AWS/EC2 \
+    --statistic Average \
+    --comparison-operator GreaterThanOrEqualToThreshold \
+    --threshold 70 \ # Escala hacia arriba si la CPU supera el 70%
+    --evaluation-periods 2
+
+
+aws autoscaling put-scaling-policy \
+    --auto-scaling-group-name MyAutoScalingGroup \
+    --policy-name ScaleDownPolicy \
+    --scaling-adjustment -1 \
+    --adjustment-type ChangeInCapacity \
+    --cooldown 300 \
+    --metric-name CPUUtilization \
+    --namespace AWS/EC2 \
+    --statistic Average \
+    --comparison-operator LessThanOrEqualToThreshold \
+    --threshold 30 \ # Escala hacia abajo si la CPU está por debajo del 30%
+    --evaluation-periods 2
+
+  aws ec2 authorize-security-group-ingress \
+    --group-name MySecurityGroup \
+    --protocol tcp \
+    --port 22 \ 
+    --source 0.0.0.0/0 \ # Origen del tráfico 
+    --region us-east-1 \ 
